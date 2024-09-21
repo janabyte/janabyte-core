@@ -22,7 +22,7 @@ func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) HandleStore(w http.ResponseWriter, r *http.Request) {
     var user model.User
-    if err := utils.ParseJSON(r, user); err != nil {
+    if err := utils.ParseJSON(r, &user); err != nil {
         utils.WriteError(w, http.StatusBadRequest, err)
         return
     }
