@@ -1,39 +1,39 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/aidosgal/janabyte/janabyte-core/internal/http/model"
 	"github.com/aidosgal/janabyte/janabyte-core/internal/repository"
 )
 
+type UserManipulator interface {
+	GetAllUsers() ([]*model.User, error)
+	CreateUser(user *model.User) error
+	GetUserByLogin(login string) (*model.User, error)
+	UpdateUser(user *model.User) error
+	DeleteUser(id int) error
+	GetUserById(id int) (*model.User, error)
+}
+
 type UserService struct {
-    repository repository.UserRepository  
+	repository repository.UserRepository
 }
 
 func NewUserService(repository repository.UserRepository) *UserService {
-    return  &UserService{repository}
+	return &UserService{repository}
 }
 
-func (service *UserService) CreateUser(user model.User) error {
-    _, err := service.repository.GetUserByPhone(user.Phone)
-    if err == nil {
-        return fmt.Errorf("User with this phone already exists")
-    }
+//func (service *UserService) CreateUser(user model.User) error {
+//	const op = "UserService.CreateUser"
+//	existUser, err := service.repository.GetUserByLogin(user.Login)
+//	if err == nil && existUser != nil {
+//		return fmt.Errorf("User with: %s already exists :%s", user.Login, op)
+//	}
+//	err = service.repository.CreateUser(&user)
+//	if err != nil {
+//		return fmt.Errorf("Failed to create user: %v :%s", err, op)
+//	}
+//
+//	return nil
+//}
 
-    //hashPassword
-    //Beka попробуй реализовать тут
-    hashPassword := user.Password
-
-    err = service.repository.CreateUser(model.User{
-        Name: user.Name,
-        Email: user.Email,
-        Phone: user.Phone,
-        Password: hashPassword,
-    })
-    if err != nil {
-        return err
-    }
-
-    return nil
-}
+//func (service *UserService)

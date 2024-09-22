@@ -1,40 +1,43 @@
 package config
 
 import (
-	"fmt"
-	"os"
-
+	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/joho/godotenv"
+	"log"
+	"os"
 )
 
 type Config struct {
-    PublicHost  string
-    Port        string
-    DBUser      string
-    DBPassword  string
-    DBAddress   string
-    DBName      string
+	PublicHost string `yaml:"public_host"`
+	Port       string `yaml:"port"`
+	DBUser     string `yaml:"db_user"`
+	DBPassword string `yaml:"db_password"`
+	DBName     string `yaml:"db_name"`
 }
 
-var Envs = iniConfig()
-
-func iniConfig() Config {
-    godotenv.Load()
-
-    return Config{
-        PublicHost: getEnv("PUBLIC_HOST", "htpp://localhost"),
-        Port: getEnv("PORT", "8080"),
-        DBUser: getEnv("DB_USER", "bizzar"),
-        DBPassword: getEnv("DB_PASSWORD", "password"),
-        DBAddress: fmt.Sprintf("%s:%s", getEnv("DB_HOST", "127.0.0.1"), getEnv("DB_PORT", "3306")),
-        DBName: getEnv("DB_NAME", "janabyte"),
-    } 
+func InitConfig() *Config {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		log.Fatal("ConfigPath is not set")
+	}
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		log.Fatalf("ConfigPath does not exist: %s", configPath)
+	}
+	var cfg Config
+	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
+		log.Fatal(err)
+	}
+	return &cfg
 }
 
-func getEnv(key, fallback string) string {
-    if value, ok := os.LookupEnv(key); ok {
-        return value
-    }
-
-    return fallback
-}
+//func getEnv(key, fallback string) string {
+//	if value, ok := os.LookupEnv(key); ok {
+//		return value
+//	}
+//
+//	return fallback
+//}

@@ -1,32 +1,31 @@
 package main
 
 import (
-	"log"
-
 	"github.com/aidosgal/janabyte/janabyte-core/cmd/janabyte"
+	"github.com/aidosgal/janabyte/janabyte-core/internal/logger"
+	"log"
+	"os"
+
 	"github.com/aidosgal/janabyte/janabyte-core/config"
 	"github.com/aidosgal/janabyte/janabyte-core/database"
-	"github.com/go-sql-driver/mysql"
+	"github.com/fatih/color"
 )
 
 func main() {
-    db, err := database.NewMySQLStorage(mysql.Config{
-        User:                   config.Envs.DBUser,
-        Passwd:                 config.Envs.DBPassword,
-        Addr:                   config.Envs.DBAddress,
-        DBName:                 config.Envs.DBName,
-        Net:                    "tcp",
-        AllowNativePasswords:   true,
-        ParseTime:              true,
-    })
+	color.NoColor = false
+	sloger := logger.SetupLogger()
+	cfg := config.InitConfig()
 
-    if err != nil {
-        log.Fatal(err)
-    }
+	storage, err := database.New(cfg)
+	if err != nil {
+		sloger.Error("Error initializing database", logger.Err(err))
+		os.Exit(1)
+	}
+	sloger.Info("Database created")
 
-    server := janabyte.NewApiServer(":8080", db)
+	server := janabyte.NewApiServer(":8080", storage.DB)
 
-    if err := server.Run(); err != nil {
-        log.Fatal(err)
-    }
+	if err := server.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
