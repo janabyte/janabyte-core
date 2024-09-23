@@ -37,6 +37,9 @@ func (s *APIServer) Run() error {
 		router.Route("/users", func(router chi.Router) {
 			router.Get("/", userHandler.HandleGetAllUsers)
 			router.Post("/", userHandler.HandleCreateUser)
+			router.Delete("/{id}", userHandler.HandleDeleteUserById)
+			router.Put("/{id}", userHandler.HandleUpdateUserById)
+			router.Get("/{id}", userHandler.HandleGetUserById)
 			//router.Post("/register", handler.CreateUser(userRepository))
 			//router.Get("/all", handler.GetAllUsers(userRepository))
 			//router.Get("/{id}", handler.GetUserById(userRepository))

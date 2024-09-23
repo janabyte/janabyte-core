@@ -38,21 +38,23 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 //	return user, nil
 //}
 
-func (repository *UserRepository) CreateUser(user *model.User) error {
+func (repository *UserRepository) CreateUser(user *model.User) (id int, err error) {
 	const op = "repository.CreateUser"
 	hashedPassword, err := utils.HashUserPassword(user.Password)
 	if err != nil {
-		return fmt.Errorf("%s : %s", op, err)
+		return -1, fmt.Errorf("%s : %s", op, err)
 	}
-	_, err = repository.db.Exec(`
+	_ = repository.db.QueryRow(`
             INSERT INTO users (login,first_name,last_name, email, phone, password) 
-            VALUES ($1, $2, $3, $4,$5,$6);
-    `, user.Login, user.FirstName, user.LastName, user.Email, user.Phone, hashedPassword)
+            VALUES ($1, $2, $3, $4,$5,$6)
+            RETURNING id
+            ;
+    `, user.Login, user.FirstName, user.LastName, user.Email, user.Phone, hashedPassword).Scan(&id)
 	if err != nil {
-		return fmt.Errorf("%s: %s", op, err)
+		return -1, fmt.Errorf("%s: %s", op, err)
 	}
 
-	return nil
+	return id, nil
 }
 
 func (repository *UserRepository) GetAllUsers() ([]*model.User, error) {
@@ -77,49 +79,118 @@ func (repository *UserRepository) GetAllUsers() ([]*model.User, error) {
 	return userList, nil
 }
 
-func (repository *UserRepository) GetUserByLogin(login string) (*model.User, error) {
-	const op = "repository.GetUserByLogin"
+func (repository *UserRepository) GetUserById(id int) (*model.User, error) {
+	const op = "repository.GetUserById"
 	user := &model.User{}
-	row, err := repository.db.Query(`
-            SELECT * FROM users
-            WHERE login = $1
-    `, login)
-	if err != nil {
+
+	row := repository.db.QueryRow(`
+		SELECT id,login, first_name, last_name, email, phone, password FROM users WHERE id = $1
+	`, id)
+
+	err := row.Scan(&user.Id, &user.Login, &user.FirstName, &user.LastName, &user.Email, &user.Phone, &user.Password)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("%s: user with id %d not found", op, id)
+	} else if err != nil {
 		return nil, fmt.Errorf("%s: %s", op, err)
 	}
-	defer row.Close()
-	if row.Next() {
-		user, err = scanRowIntoUser(row)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %s", op, err)
-		}
-	}
+
 	return user, nil
 }
 
-func (repository *UserRepository) UpdateUser(user *model.User) error {
+func (repository *UserRepository) GetUserByPhone(phone string) (*model.User, error) {
+	user := &model.User{}
+
+	// Use QueryRow instead of Query for a single-row result
+	row := repository.db.QueryRow(`
+        SELECT id,login, first_name, last_name, email, phone, password 
+        FROM users
+        WHERE phone = $1
+    `, phone)
+
+	// Scan the result directly
+	err := row.Scan(&user.Id, &user.Login, &user.FirstName, &user.LastName, &user.Email, &user.Phone, &user.Password)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// No user found, return nil and no error
+			return nil, nil
+		}
+		return nil, fmt.Errorf("issue with getting user by phone %s: %s", phone, err)
+	}
+
+	return user, nil
+}
+
+func (repository *UserRepository) GetUserByEmail(email string) (*model.User, error) {
+	user := &model.User{}
+
+	// Use QueryRow instead of Query for a single-row result
+	row := repository.db.QueryRow(`
+        SELECT id,login, first_name, last_name, email, phone, password 
+        FROM users
+        WHERE email = $1
+    `, email)
+
+	// Scan the result directly
+	err := row.Scan(&user.Id, &user.Login, &user.FirstName, &user.LastName, &user.Email, &user.Phone, &user.Password)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// No user found, return nil and no error
+			return nil, nil
+		}
+		return nil, fmt.Errorf("issue with getting user by email %s: %s", email, err)
+	}
+
+	return user, nil
+}
+
+func (repository *UserRepository) GetUserByLogin(login string) (*model.User, error) {
+	const op = "repository.GetUserByLogin"
+	user := &model.User{}
+
+	// Use QueryRow instead of Query for a single-row result
+	row := repository.db.QueryRow(`
+        SELECT id,login, first_name, last_name, email, phone, password 
+        FROM users
+        WHERE login = $1
+    `, login)
+
+	// Scan the result directly
+	err := row.Scan(&user.Id, &user.Login, &user.FirstName, &user.LastName, &user.Email, &user.Phone, &user.Password)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// No user found, return nil and no error
+			return nil, nil
+		}
+		// Other errors during scanning
+		return nil, fmt.Errorf("%s: %s", op, err)
+	}
+
+	return user, nil
+}
+
+func (repository *UserRepository) UpdateUser(id int, user *model.User) error {
 	const op = "repository.UpdateUser"
 
-	get_user, err := repository.GetUserById(user.Id)
-	if err != nil {
-		return fmt.Errorf("%s: %s", op, err)
-	}
-	hashedPassword := get_user.Password
+	//hashedPassword := get_user.Password
+	//if user.Password != "" {
+	//	// If a new password is provided, hash it
+	//	hashedPassword, err = utils.HashUserPassword(user.Password)
+	//	if err != nil {
+	//		return fmt.Errorf("%s : %s", op, err)
+	//	}
+	//}
 
-	if get_user.Password != "" {
-		hashedPassword, err = utils.HashUserPassword(get_user.Password)
-		if err != nil {
-			return fmt.Errorf("%s : %s", op, err)
-		}
-	}
-	_, err = repository.db.Exec(`
+	// Execute the update query
+	_, err := repository.db.Exec(`
             UPDATE users
-            SET login = $1, first_name = $2, last_name = $3, email = $4, phone = $5,password = $6
+            SET login = $1, first_name = $2, last_name = $3, email = $4, phone = $5, password = $6
             WHERE id = $7
-    `, user.Login, user.FirstName, user.LastName, user.Email, user.Phone, hashedPassword, user.Id)
+    `, user.Login, user.FirstName, user.LastName, user.Email, user.Phone, user.Password, user.Id)
+
 	if err != nil {
 		return fmt.Errorf("%s: %s", op, err)
 	}
+
 	return nil
 }
 
@@ -134,22 +205,17 @@ func (repository *UserRepository) DeleteUser(id int) error {
 	return nil
 }
 
-func (repository *UserRepository) GetUserById(id int) (*model.User, error) {
-	const op = "repository.GetUserById"
-	user := &model.User{}
-
-	row := repository.db.QueryRow(`
-		SELECT id, login, first_name, last_name, email, phone, password FROM users WHERE id = $1
-	`, id)
-
-	err := row.Scan(&user.Id, &user.Login, &user.FirstName, &user.LastName, &user.Email, &user.Phone, &user.Password)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, fmt.Errorf("%s: user with id %d not found", op, id)
-	} else if err != nil {
-		return nil, fmt.Errorf("%s: %s", op, err)
+func (repository *UserRepository) SetPassword(id int, password string) error {
+	const op = "repository.SetPassword"
+	_, err := repository.db.Exec(`
+			UPDATE users
+			SET password = $1
+			WHERE id = $2
+	`, password, id)
+	if err != nil {
+		return fmt.Errorf("%s: %s", op, err)
 	}
-
-	return user, nil
+	return nil
 }
 
 func scanRowIntoUser(rows *sql.Rows) (*model.User, error) {
