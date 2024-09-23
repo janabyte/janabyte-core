@@ -11,17 +11,30 @@ import (
 	"github.com/aidosgal/janabyte/janabyte-core/internal/utils"
 )
 
-//type Handler struct {
-//	service service.UserService
-//}
-//
-//func NewUserHandler(service service.UserService) *Handler {
-//	return &Handler{service}
-//}
-//
-//func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
-//
-//}
+type Handler struct {
+	service service.UserService
+}
+
+func NewUserHandler(service service.UserService) *Handler {
+	return &Handler{service}
+}
+
+func (h *Handler) HandleGetAllUsers(w http.ResponseWriter, r *http.Request) {
+	const op = "handler.HandleGetAllUsers"
+	users, err := h.service.GetAllUsers()
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+	for _, user := range users {
+		utils.WriteJSON(w, http.StatusOK, user)
+	}
+
+}
+
+func (h *Handler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+
+}
 
 func CreateUser(creator service.UserManipulator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -112,6 +125,10 @@ func UpdateUserById(updater service.UserManipulator) http.HandlerFunc {
 		utils.WriteJSON(w, http.StatusOK, map[string]string{"result": "success"})
 	}
 }
+
+//func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
+//
+//}
 
 //func (h *Handler) HandleStore(w http.ResponseWriter, r *http.Request) {
 //	var user model.User

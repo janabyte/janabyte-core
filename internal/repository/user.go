@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aidosgal/janabyte/janabyte-core/internal/http/model"
+	"github.com/aidosgal/janabyte/janabyte-core/internal/utils"
 )
 
 type UserRepository struct {
@@ -39,7 +40,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 
 func (repository *UserRepository) CreateUser(user *model.User) error {
 	const op = "repository.CreateUser"
-	hashedPassword, err := HashUserPassword(user.Password)
+	hashedPassword, err := utils.HashUserPassword(user.Password)
 	if err != nil {
 		return fmt.Errorf("%s : %s", op, err)
 	}
@@ -106,7 +107,7 @@ func (repository *UserRepository) UpdateUser(user *model.User) error {
 	hashedPassword := get_user.Password
 
 	if get_user.Password != "" {
-		hashedPassword, err = HashUserPassword(get_user.Password)
+		hashedPassword, err = utils.HashUserPassword(get_user.Password)
 		if err != nil {
 			return fmt.Errorf("%s : %s", op, err)
 		}

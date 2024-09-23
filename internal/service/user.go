@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"github.com/aidosgal/janabyte/janabyte-core/internal/http/model"
 	"github.com/aidosgal/janabyte/janabyte-core/internal/repository"
 )
@@ -22,18 +23,28 @@ func NewUserService(repository repository.UserRepository) *UserService {
 	return &UserService{repository}
 }
 
-//func (service *UserService) CreateUser(user model.User) error {
-//	const op = "UserService.CreateUser"
-//	existUser, err := service.repository.GetUserByLogin(user.Login)
-//	if err == nil && existUser != nil {
-//		return fmt.Errorf("User with: %s already exists :%s", user.Login, op)
-//	}
-//	err = service.repository.CreateUser(&user)
-//	if err != nil {
-//		return fmt.Errorf("Failed to create user: %v :%s", err, op)
-//	}
-//
-//	return nil
-//}
+func (service *UserService) CreateUser(user model.User) error {
+	const op = "UserService.CreateUser"
+	existUser, err := service.repository.GetUserByLogin(user.Login)
+	if err == nil && existUser != nil {
+		return fmt.Errorf("User with: %s already exists :%s", user.Login, op)
+	}
+	err = service.repository.CreateUser(&user)
+	if err != nil {
+		return fmt.Errorf("Failed to create user: %v :%s", err, op)
+	}
 
-//func (service *UserService)
+	return nil
+}
+
+func (s *UserService) GetAllUsers() ([]*model.User, error) {
+	const op = "service.GetAllUsers"
+	users, err := s.repository.GetAllUsers()
+	if err != nil {
+		return nil, fmt.Errorf("error with repository: %s %s", err, op)
+	}
+	return users, nil
+
+}
+
+//rep - service - handler
