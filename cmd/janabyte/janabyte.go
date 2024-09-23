@@ -3,6 +3,7 @@ package janabyte
 import (
 	"database/sql"
 	"github.com/aidosgal/janabyte/janabyte-core/internal/logger"
+	"github.com/aidosgal/janabyte/janabyte-core/internal/service"
 	"net/http"
 
 	"github.com/aidosgal/janabyte/janabyte-core/internal/http/handler"
@@ -29,16 +30,18 @@ func (s *APIServer) Run() error {
 	router.Use(middleware.Logger)
 	router.Use(middleware.URLFormat)
 	userRepository := repository.NewUserRepository(s.db)
-	//userService := service.NewUserService(*userRepository)
-	//userHandler := handler.NewUserHandler(*userService)
+	userService := service.NewUserService(*userRepository)
+	userHandler := handler.NewUserHandler(*userService)
 
 	router.Route("/api/v1", func(router chi.Router) {
-		router.Route("/user", func(router chi.Router) {
-			router.Post("/register", handler.CreateUser(userRepository))
-			router.Get("/all", handler.GetAllUsers(userRepository))
-			router.Get("/{id}", handler.GetUserById(userRepository))
-			router.Delete("/delete/{id}", handler.DeleteUserById(userRepository))
-			router.Put("/update", handler.UpdateUserById(userRepository))
+		router.Route("/users", func(router chi.Router) {
+			router.Get("/", userHandler.HandleGetAllUsers)
+			router.Post("/", userHandler.HandleCreateUser)
+			//router.Post("/register", handler.CreateUser(userRepository))
+			//router.Get("/all", handler.GetAllUsers(userRepository))
+			//router.Get("/{id}", handler.GetUserById(userRepository))
+			//router.Delete("/delete/{id}", handler.DeleteUserById(userRepository))
+			//router.Put("/update", handler.UpdateUserById(userRepository))
 		})
 	})
 
