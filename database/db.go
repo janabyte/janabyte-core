@@ -74,8 +74,8 @@ func New(cfg *config.Config) (*Storage, error) {
 			    id SERIAL PRIMARY KEY,
 			    first_name varchar(255) not null,
 			    last_name varchar(255) not null,
-			    email varchar(255) not null,
-			    phone varchar(255) not null,
+			    email varchar(255) not null UNIQUE,
+			    phone varchar(255) not null UNIQUE,
 			    password varchar(255) not null
 			);
 `)

@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
+	"math/rand"
+	"time"
 )
 
 func CheckPasswordHash(hash, password string) error {
@@ -16,4 +18,18 @@ func HashUserPassword(password string) (string, error) {
 		return "", fmt.Errorf("cannot hash the password: %s, %s", op, err)
 	}
 	return string(hashedPassword), nil
+}
+
+func GeneratePassword() string {
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"abcdefghijklmnopqrstuvwxyz" +
+		"0123456789")
+
+	b := make([]rune, MinPasswordLength)
+	for i := range b {
+		b[i] = chars[rnd.Intn(len(chars))]
+	}
+
+	return string(b)
 }
