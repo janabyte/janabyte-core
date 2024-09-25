@@ -184,4 +184,16 @@ func (s *UserService) GetUserById(id int) (*model.User, error) {
 	return user, nil
 }
 
+//func (s *UserService) GetUserByLogin(login string) (*model.User, error) {
+//	const op = "service.GetUserByLogin"
+//	user, err := s.repository.GetUserByLogin(login)
+//	if err != nil {
+//		return nil, fmt.Errorf("error getting user by login %s: %s", login, err)
+//	}
+//	if user == nil {
+//		return nil, fmt.Errorf("user with login %s does not exists", login)
+//	}
+//	return user, nil
+//}
+
 //rep - service - handler

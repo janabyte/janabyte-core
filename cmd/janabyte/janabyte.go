@@ -40,15 +40,12 @@ func (s *APIServer) Run() error {
 			router.Delete("/{id}", userHandler.HandleDeleteUserById)
 			router.Put("/{id}", userHandler.HandleUpdateUserById)
 			router.Get("/{id}", userHandler.HandleGetUserById)
-			//router.Post("/register", handler.CreateUser(userRepository))
-			//router.Get("/all", handler.GetAllUsers(userRepository))
-			//router.Get("/{id}", handler.GetUserById(userRepository))
-			//router.Delete("/delete/{id}", handler.DeleteUserById(userRepository))
-			//router.Put("/update", handler.UpdateUserById(userRepository))
+			router.Post("/login", userHandler.HandleLogin)
+			router.Post("/logout", userHandler.Logout)
+			router.Post("/refresh", userHandler.RefreshTokenHandler)
 		})
 	})
 
-	//log.Println("Listening on", s.address)
 	sloger.Info("Listening on", s.address)
 	return http.ListenAndServe(s.address, router)
 }
