@@ -16,28 +16,6 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-//func (repository *UserRepository) GetUserByPhone(phone string) (*model.User, error) {
-//	rows, err := repository.db.Query("SELECT * FROM users WHERE phone = ?", phone)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	user := new(model.User)
-//
-//	for rows.Next() {
-//		user, err = scanRowIntoUser(rows)
-//		if err != nil {
-//			return nil, err
-//		}
-//	}
-//
-//	if user.Id == 0 {
-//		return nil, fmt.Errorf("User not found")
-//	}
-//
-//	return user, nil
-//}
-
 func (repository *UserRepository) CreateUser(user *model.User) (id int, err error) {
 	const op = "repository.CreateUser"
 	hashedPassword, err := utils.HashUserPassword(user.Password)
@@ -171,16 +149,6 @@ func (repository *UserRepository) GetUserByLogin(login string) (*model.User, err
 func (repository *UserRepository) UpdateUser(id int, user *model.User) error {
 	const op = "repository.UpdateUser"
 
-	//hashedPassword := get_user.Password
-	//if user.Password != "" {
-	//	// If a new password is provided, hash it
-	//	hashedPassword, err = utils.HashUserPassword(user.Password)
-	//	if err != nil {
-	//		return fmt.Errorf("%s : %s", op, err)
-	//	}
-	//}
-
-	// Execute the update query
 	_, err := repository.db.Exec(`
             UPDATE users
             SET login = $1, first_name = $2, last_name = $3, email = $4, phone = $5, password = $6
@@ -212,6 +180,48 @@ func (repository *UserRepository) SetPassword(id int, password string) error {
 			SET password = $1
 			WHERE id = $2
 	`, password, id)
+	if err != nil {
+		return fmt.Errorf("%s: %s", op, err)
+	}
+	return nil
+}
+
+func (repository *UserRepository) AuthenticateByLogin(login, password string) error {
+	const op = "repository.AuthenticateByLogin"
+	var hashedPassword string
+	row := repository.db.QueryRow(`
+				SELECT password FROM users
+				WHERE login = $1
+	`, login)
+	err := row.Scan(&hashedPassword)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			fmt.Errorf("No user with login %s found", login)
+		}
+		return fmt.Errorf("%s: %s", op, err)
+	}
+	err = utils.CheckPasswordHash(hashedPassword, password)
+	if err != nil {
+		return fmt.Errorf("%s: %s", op, err)
+	}
+	return nil
+}
+
+func (repository *UserRepository) AuthenticateByEmail(email, password string) error {
+	const op = "repository.AuthenticateByEmail"
+	var hashedPassword string
+	row := repository.db.QueryRow(`
+				SELECT password FROM users
+				WHERE email = $1
+	`, email)
+	err := row.Scan(&hashedPassword)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			fmt.Errorf("No user with email %s found", email)
+		}
+		return fmt.Errorf("%s: %s", op, err)
+	}
+	err = utils.CheckPasswordHash(hashedPassword, password)
 	if err != nil {
 		return fmt.Errorf("%s: %s", op, err)
 	}

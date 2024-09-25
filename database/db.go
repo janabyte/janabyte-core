@@ -25,6 +25,37 @@ func New(cfg *config.Config) (*Storage, error) {
 		log.Fatalf("%s %s", op, err)
 	}
 	_, err = db.Exec(`
+			CREATE TABLE IF NOT EXISTS roles(
+			    id SERIAL PRIMARY KEY,
+			    name varchar(255) NOT NULL
+			)
+	`)
+	if err != nil {
+		log.Fatalf("error when creating roles table: %s", err)
+	}
+	_, err = db.Exec(`
+			CREATE TABLE IF NOT EXISTS permissions(
+			    id SERIAL PRIMARY KEY,
+			    name varchar(255) NOT NULL,
+			    code varchar(255) NOT NULL
+			)
+	`)
+	if err != nil {
+		log.Fatalf("error when creating permission table: %s", err)
+	}
+	_, err = db.Exec(`
+			CREATE TABLE IF NOT EXISTS role_permission(
+			    id SERIAL PRIMARY KEY,
+			    role_id int not null,
+				permission_id int not null,
+				FOREIGN KEY(role_id) REFERENCES roles(id),
+			    FOREIGN KEY(permission_id) REFERENCES permissions(id)
+			)
+	`)
+	if err != nil {
+		log.Fatalf("error when creating role_permission table: %s", err)
+	}
+	_, err = db.Exec(`
 			CREATE TABLE IF NOT EXISTS users(
 			    id SERIAL PRIMARY KEY,
 			    login varchar(255) not null UNIQUE,
@@ -32,24 +63,14 @@ func New(cfg *config.Config) (*Storage, error) {
 			    last_name varchar(255) not null,
 			    email varchar(255) not null UNIQUE,
 			    phone varchar(255) not null UNIQUE,
-			    password varchar(255) not null
+			    password varchar(255) not null,
+			    role_id int not null,
+			    FOREIGN KEY(role_id) REFERENCES roles(id)
 			);
 `)
 	if err != nil {
 		log.Fatalf("Error when creating Users: %s %s", op, err)
 
-	}
-	_, err = db.Exec(`
-			CREATE TABLE IF NOT EXISTS owners(
-			    id SERIAL PRIMARY KEY,
-			    email varchar(255) not null UNIQUE,
-			    first_name varchar(255) not null,
-			    last_name varchar(255) not null,
-			    password varchar(255) not null
-			)
-	`)
-	if err != nil {
-		log.Fatalf("Error when creating owners: %s %s", op, err)
 	}
 
 	_, err = db.Exec(`
@@ -62,25 +83,12 @@ func New(cfg *config.Config) (*Storage, error) {
 			    work_time_end time not null,
 			    x_size int,
 			    y_size int,
-			    owner_id int,
-			    FOREIGN KEY(owner_id) REFERENCES owners(id)
+			    user_id int,
+			    FOREIGN KEY(user_id) REFERENCES users(id)
 			);
 `)
 	if err != nil {
 		log.Fatalf("Error when creating Clubs: %s %s", op, err)
-	}
-	_, err = db.Exec(`
-			CREATE TABLE IF NOT EXISTS admins(
-			    id SERIAL PRIMARY KEY,
-			    first_name varchar(255) not null,
-			    last_name varchar(255) not null,
-			    email varchar(255) not null UNIQUE,
-			    phone varchar(255) not null UNIQUE,
-			    password varchar(255) not null
-			);
-`)
-	if err != nil {
-		log.Fatalf("Error when creating Admins: %s %s", op, err)
 	}
 
 	_, err = db.Exec(`

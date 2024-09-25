@@ -23,7 +23,7 @@ func main() {
 	}
 	sloger.Info("Database created")
 
-	server := janabyte.NewApiServer(":8080", storage.DB)
+	server := janabyte.NewApiServer(":8090", storage.DB)
 
 	if err := server.Run(); err != nil {
 		log.Fatal(err)
