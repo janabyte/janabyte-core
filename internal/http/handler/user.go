@@ -135,7 +135,7 @@ func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	//todo: use real permission model
 	permission := []string{"ADMIN"} //пока так оставил, не понял пока как передавать permission юзерам
-	slogger.Debug("retUser: ", retUser)
+	//slogger.Debug("retUser: ", retUser)
 	accessToken, accessClaims, err := token.MakeToken(retUser, permission, access_duration)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("cannot create access token"))

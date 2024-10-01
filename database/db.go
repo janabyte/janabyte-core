@@ -27,7 +27,7 @@ func New(cfg *config.Config) (*Storage, error) {
 	_, err = db.Exec(`
 			CREATE TABLE IF NOT EXISTS roles(
 			    id SERIAL PRIMARY KEY,
-			    name varchar(255) NOT NULL
+			    name varchar(255) NOT NULL UNIQUE
 			)
 	`)
 	if err != nil {
@@ -79,11 +79,11 @@ func New(cfg *config.Config) (*Storage, error) {
 			    name varchar(255) not null,
 			    description text,
 			    address varchar(255) not null,
-			    work_time_start time not null,
-			    work_time_end time not null,
+			    work_time_start varchar(255) not null,
+			    work_time_end varchar(255) not null,
 			    x_size int,
 			    y_size int,
-			    user_id int,
+			    user_id int NOT NULL,
 			    FOREIGN KEY(user_id) REFERENCES users(id)
 			);
 `)
@@ -105,7 +105,7 @@ func New(cfg *config.Config) (*Storage, error) {
 	_, err = db.Exec(`
 			CREATE TABLE IF NOT EXISTS clubs_computers(
 			    id SERIAL PRIMARY KEY,
-			    computer_number int not null,
+			    computer_number int not null UNIQUE,
 			    is_near_to_next bool not null,
 			    is_near_to_prev bool not null,
 			    gpu varchar(255) not null,
