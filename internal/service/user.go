@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/aidosgal/janabyte/janabyte-core/internal/http/model"
+	"github.com/aidosgal/janabyte/janabyte-core/internal/logger"
 	"github.com/aidosgal/janabyte/janabyte-core/internal/repository"
 	"github.com/aidosgal/janabyte/janabyte-core/internal/utils"
 	"log"
@@ -10,15 +11,19 @@ import (
 
 type UserService struct {
 	repository repository.UserRepository
+	roles      repository.RolesRepository
 }
 
-func NewUserService(repository repository.UserRepository) *UserService {
-	return &UserService{repository}
+func NewUserService(repository repository.UserRepository, roles repository.RolesRepository) *UserService {
+	return &UserService{repository, roles}
 }
 
 func (service *UserService) CreateUser(user *model.User) (int, error) {
 	const op = "UserService.CreateUser"
-
+	roles, err := service.roles.GetRoleById(user.RoleID)
+	if err != nil || roles == nil {
+		return -1, fmt.Errorf("Role with id %d does not exist", user.RoleID)
+	}
 	existLogUser, err := service.repository.GetUserByLogin(user.Login)
 	if err != nil {
 		return -1, fmt.Errorf("error checking login %s: %s", op, err)
@@ -40,7 +45,7 @@ func (service *UserService) CreateUser(user *model.User) (int, error) {
 
 	existsPhoneUser, err := service.repository.GetUserByPhone(user.Phone)
 	if err != nil {
-		return -1, fmt.Errorf("error checking phone %s: %s", op, err)
+		return -1, fmt.Errorf("error checking phone: %s", err)
 	}
 	if existsPhoneUser != nil {
 		log.Printf("User with phone %s already exists", user.Phone)
@@ -49,26 +54,26 @@ func (service *UserService) CreateUser(user *model.User) (int, error) {
 
 	err = utils.CheckPhoneNumber(user.Password)
 	if err != nil {
-		return -1, fmt.Errorf("error creating user %s: %v", op, err)
+		return -1, fmt.Errorf("error creating user: %v", err)
 	}
 	err = utils.CheckEmail(user.Email)
 	if err != nil {
-		return -1, fmt.Errorf("error creating user %s: %v", op, err)
+		return -1, fmt.Errorf("error creating user: %v", err)
 	}
 	err = utils.CheckPhoneNumber(user.Phone)
 	if err != nil {
-		return -1, fmt.Errorf("error creating user %s: %v", op, err)
+		return -1, fmt.Errorf("error creating user: %s ", err)
 	}
 	err = utils.IsValidPassword(user.Password)
 	if err != nil {
-		return -1, fmt.Errorf("error creating user %s: %v", op, err)
+		return -1, fmt.Errorf("error creating user: %s", err)
 	}
 
 	id, err := service.repository.CreateUser(user)
 	if err != nil {
-		return -1, fmt.Errorf("failed to create user: %v :%s", err, op)
+		return -1, fmt.Errorf("failed to create user: %v ", err)
 	}
-
+	logger.SetupLogger().Debug("User created", map[string]interface{}{"user": user})
 	return id, nil
 }
 
@@ -77,6 +82,9 @@ func (s *UserService) GetAllUsers() ([]*model.User, error) {
 	users, err := s.repository.GetAllUsers()
 	if err != nil {
 		return nil, fmt.Errorf("error with repository: %s %s", err, op)
+	}
+	if len(users) == 0 {
+		return nil, fmt.Errorf("no users found")
 	}
 	return users, nil
 
@@ -100,8 +108,12 @@ func (s *UserService) DeleteUserById(id int) error {
 }
 
 func (s *UserService) UpdateUserById(id int, user *model.User) error {
-	if user.Id == 0 {
-		user.Id = id
+	//if user.Id == 0 {
+	//	user.Id = id
+	//}
+	roles, err := s.roles.GetRoleById(user.RoleID)
+	if err != nil || roles == nil {
+		return fmt.Errorf("Role with id %d does not exist", user.RoleID)
 	}
 	get_user, err := s.repository.GetUserById(id)
 	if err != nil {
